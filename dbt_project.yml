@@ -1,0 +1,24 @@
+name: 'data_pipelines'
+version: '1.0.0'
+config-version: 2
+
+profile: 'data_pipelines'
+
+model-paths: ["models"]
+macro-paths: ["macros"]
+target-path: "target"
+clean-targets: ["target", "dbt_packages"]
+
+# Staging = thin views over the raw sources; marts = materialized tables that the
+# exporter publishes. Any mart tagged `ltm_feed` is exported for Low Tech Maps.
+models:
+  data_pipelines:
+    staging:
+      +materialized: view
+    marts:
+      +materialized: table
+
+vars:
+  # Row cap pulled from each Socrata source. Raise for full loads (and consider a
+  # Socrata app token to lift rate limits).
+  max_rows: 5000

@@ -1,0 +1,15 @@
+version: 2
+
+models:
+  - name: stg_sf_business
+    description: "Active-or-not SF registered business locations with coordinates."
+    columns:
+      - name: uniqueid
+        description: "Stable business-location id from the registry."
+        tests: [not_null]
+
+  - name: stg_sf_inspections
+    description: "SF restaurant health inspections (LIVES). Multiple rows per business."
+    columns:
+      - name: business_id
+        tests: [not_null]

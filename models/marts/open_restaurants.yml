@@ -1,0 +1,17 @@
+version: 2
+
+models:
+  - name: open_restaurants
+    description: >
+      SF registered food businesses confirmed operating via a health inspection in
+      the last 18 months. Tagged `ltm_feed` → exported to JSON for Low Tech Maps.
+    columns:
+      - name: id
+        description: "Registry uniqueid — used as the feed's upsert key."
+        tests: [not_null, unique]
+      - name: name
+        tests: [not_null]
+      - name: lat
+        tests: [not_null]
+      - name: lng
+        tests: [not_null]

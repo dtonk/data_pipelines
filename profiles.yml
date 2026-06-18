@@ -1,0 +1,11 @@
+# Committed on purpose — DuckDB is file-based, no secrets here. Run dbt with
+# `--profiles-dir .` so it uses this file instead of ~/.dbt/profiles.yml.
+data_pipelines:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: "{{ env_var('DUCKDB_PATH', 'warehouse.duckdb') }}"
+      threads: 4
+      extensions:
+        - httpfs   # lets read_json_auto/read_csv_auto fetch remote URLs
