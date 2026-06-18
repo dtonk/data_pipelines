@@ -1,21 +1,25 @@
--- Source: DataSF "Restaurant Scores – LIVES Standard" (pyih-qa8i), Socrata JSON.
--- One row per (business, inspection, violation); we dedup to the latest
--- inspection per business downstream.
+-- Source: DataSF "Restaurant Inspections" (tvy3-wexg), Socrata JSON. Actively
+-- updated; sourced from the business registry, so `dba` matches the registry's
+-- `dba_name`. The "actually open" side: presence of an inspection proves the
+-- business really opened. Prefiltered server-side to the lookback window (a
+-- recently-opened business's first inspection falls inside it) and the columns we
+-- use. Future-dated junk inspection dates are excluded.
+{%- set lookback = var('open_lookback_months', 12) -%}
+{%- set today = modules.datetime.date.today() -%}
+{%- set cutoff = (today - modules.datetime.timedelta(days=lookback * 31)).isoformat() %}
 with raw as (
     select *
-    from read_json_auto(
-        'https://data.sfgov.org/resource/pyih-qa8i.json?$limit={{ var("max_rows") }}'
-    )
+    from {{ socrata_json(
+        'tvy3-wexg',
+        select='dba, street_address_clean, inspection_date',
+        where="inspection_date >= '" ~ cutoff ~ "'"
+              ~ " AND inspection_date <= '" ~ today.isoformat() ~ "'"
+    ) }}
 )
 
 select
-    business_id,
-    business_name,
-    business_address,
-    try_cast(business_latitude as double)   as lat,
-    try_cast(business_longitude as double)  as lng,
-    try_cast(inspection_date as date)       as inspection_date,
-    try_cast(inspection_score as integer)   as inspection_score,
-    inspection_type
+    dba                                  as business_name,
+    street_address_clean                 as business_address,
+    try_cast(inspection_date as date)    as inspection_date
 from raw
-where business_name is not null
+where dba is not null

@@ -1,11 +1,19 @@
 -- Source: DataSF "Registered Business Locations" (g8m3-pdis), Socrata JSON.
--- read_json_auto pulls the live endpoint over httpfs. Raise var:max_rows (and add
--- a Socrata app token) for a full load.
+-- The "recently opened" side: businesses whose location opened within the lookback
+-- window and is still active (no end date). Prefiltered server-side to those rows
+-- and only the columns we use. Future-dated junk start dates are excluded.
+{%- set lookback = var('open_lookback_months', 12) -%}
+{%- set today = modules.datetime.date.today() -%}
+{%- set cutoff = (today - modules.datetime.timedelta(days=lookback * 31)).isoformat() %}
 with raw as (
     select *
-    from read_json_auto(
-        'https://data.sfgov.org/resource/g8m3-pdis.json?$limit={{ var("max_rows") }}'
-    )
+    from {{ socrata_json(
+        'g8m3-pdis',
+        select='uniqueid, dba_name, full_business_address, city, business_zip, location_start_date, location_end_date, location',
+        where="location_end_date IS NULL"
+              ~ " AND location_start_date >= '" ~ cutoff ~ "'"
+              ~ " AND location_start_date <= '" ~ today.isoformat() ~ "'"
+    ) }}
 )
 
 select
@@ -14,10 +22,8 @@ select
     full_business_address,
     city,
     business_zip,
-    try_cast(location_end_date as date)          as location_end_date,
+    try_cast(location_start_date as date)        as opened_date,
     -- Socrata point: {"type":"Point","coordinates":[lng,lat]} → DuckDB STRUCT.
-    -- Lists are 1-indexed: [1]=lng, [2]=lat. If your DuckDB infers `location` as
-    -- text instead, swap to json_extract(location, '$.coordinates[0]') etc.
     try_cast(location.coordinates[1] as double)  as lng,
     try_cast(location.coordinates[2] as double)  as lat
 from raw

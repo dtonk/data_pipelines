@@ -1,46 +1,41 @@
 {{ config(materialized='table', tags=['ltm_feed']) }}
 
--- SF registered food businesses confirmed still operating by a recent health
--- inspection. The inspections feed is sourced from the business registry, so the
--- names align — we join on normalized business name. Address is added to the join
--- only to keep chains (same name, many locations) matched to the right site; drop
--- it if it costs you matches.
+-- Recently-opened SF food businesses, confirmed actually open. Two signals:
+--   1. the business registry lists the location as recently opened & still active
+--      ({{ ref('stg_sf_business') }}), and
+--   2. it has had a health inspection ({{ ref('stg_sf_inspections') }}) — its first
+--      inspection is proof it really opened, not just registered.
+-- Inspections are sourced from the registry, so `dba` == `dba_name`; we join on
+-- normalized name, with normalized address as a tiebreaker for chains (same name,
+-- many locations). The inspection cross-check also restricts to food businesses.
 --
 -- Output conforms to the Low Tech Maps feed contract: id, name, lat, lng (+ extras).
 
 with biz as (
     select *
     from {{ ref('stg_sf_business') }}
-    where location_end_date is null          -- city still lists it as active
-      and lat is not null and lng is not null
+    where lat is not null and lng is not null
 ),
 
-recent_inspections as (
-    select *
-    from {{ ref('stg_sf_inspections') }}
-    where inspection_date >= current_date - interval 18 month
-),
-
-matched as (
+-- First inspection per business location (existence = proof it opened).
+first_inspection as (
     select
-        b.uniqueid                    as id,
-        b.dba_name                    as name,
-        b.full_business_address       as address,
-        b.lat,
-        b.lng,
-        i.inspection_date             as last_inspected,
-        i.inspection_score,
-        row_number() over (
-            partition by b.uniqueid order by i.inspection_date desc
-        ) as rn
-    from biz b
-    join recent_inspections i
-      on lower(trim(b.dba_name)) = lower(trim(i.business_name))
-     and {{ normalize_address('b.full_business_address') }}
-           = {{ normalize_address('i.business_address') }}
+        lower(trim(business_name))                    as name_key,
+        {{ normalize_address('business_address') }}   as addr_key,
+        min(inspection_date)                          as first_inspected
+    from {{ ref('stg_sf_inspections') }}
+    group by 1, 2
 )
 
--- Keep one row per business (its most recent matching inspection).
-select id, name, address, lat, lng, last_inspected, inspection_score
-from matched
-where rn = 1
+select
+    b.uniqueid              as id,
+    b.dba_name              as name,
+    b.full_business_address as address,
+    b.lat,
+    b.lng,
+    b.opened_date,
+    f.first_inspected
+from biz b
+join first_inspection f
+  on lower(trim(b.dba_name)) = f.name_key
+ and {{ normalize_address('b.full_business_address') }} = f.addr_key

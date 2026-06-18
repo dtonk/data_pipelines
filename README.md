@@ -12,20 +12,23 @@ JSON feed that a Low Tech Maps map can import and auto-refresh.
 
 ## First pipeline: `open_restaurants`
 
-SF registered food businesses, cross-checked against health inspections so the
-map only shows places that are **actually operating** (inspected in the last 18
-months). Sources (both DataSF / Socrata):
+**Recently-opened** SF food businesses, confirmed **actually open**: the registry
+says a location opened recently and is still active, and a health inspection proves
+it really opened (not just registered). Sources (both DataSF / Socrata):
 
 | dataset | id | role |
 |---|---|---|
-| Registered Business Locations | `g8m3-pdis` | the businesses + coordinates |
-| Restaurant Scores – LIVES | `pyih-qa8i` | proof of recent operation |
+| Registered Business Locations | `g8m3-pdis` | recently-opened, still-active businesses + coordinates |
+| Restaurant Inspections | `tvy3-wexg` | first inspection = proof it actually opened |
 
-The inspections feed is sourced from the business registry, so the business names
-align — [`open_restaurants.sql`](models/marts/open_restaurants.sql) joins on
+Inspections are sourced from the registry, so `dba` matches the registry's
+`dba_name` — [`open_restaurants.sql`](models/marts/open_restaurants.sql) joins on
 normalized name (plus normalized address, to keep chains matched to the right
-location). Refine [`normalize_address`](macros/normalize_address.sql) if you hit
-mismatches.
+location). The inspection cross-check also restricts the registry to food
+businesses. Both Socrata pulls are prefiltered server-side via the
+[`socrata_json`](macros/socrata.sql) macro (only recent rows + needed columns).
+Tune the window with `var:open_lookback_months`; refine
+[`normalize_address`](macros/normalize_address.sql) if you hit mismatches.
 
 ## The Low Tech Maps feed contract
 
@@ -63,9 +66,22 @@ The framework is the convention — no plumbing to touch:
 
 ## Publishing (R2)
 
-Copy `.env.example` → `.env` and fill in R2 creds for a **public** bucket (you can
-reuse the account you use for map backups; use a separate public bucket). Without
-`.env`, the exporter just writes local files under `out/`.
+Feeds publish to a **dedicated public R2 bucket** — kept separate from any bucket
+holding app/internal data. R2 public access is per-bucket (all-or-nothing), so a
+shared bucket would expose internal objects; a separate bucket is the boundary.
+
+One-time setup in the Cloudflare dashboard:
+
+1. **R2 → Create bucket**, e.g. `ltm-public-feeds`.
+2. Bucket **Settings → Public access**: enable the `r2.dev` subdomain (or connect a
+   custom domain like `feeds.example.com`). Confirm your app bucket stays private.
+3. **Manage R2 API Tokens → Create** with **Object Read & Write**, scoped to *only*
+   this bucket — so a leaked key can't touch other data.
+4. Copy `.env.example` → `.env` and fill in the token, endpoint,
+   `R2_BUCKET_NAME=ltm-public-feeds`, and `R2_PUBLIC_BASE_URL` (the r2.dev or custom
+   domain). Add the same as repo Actions secrets for CI (see Scheduling).
+
+Without `.env`, the exporter just writes local files under `out/`.
 
 ## Scheduling
 

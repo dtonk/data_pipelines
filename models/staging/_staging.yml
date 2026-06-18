@@ -2,14 +2,14 @@ version: 2
 
 models:
   - name: stg_sf_business
-    description: "Active-or-not SF registered business locations with coordinates."
+    description: "Recently-opened, still-active SF registered business locations with coordinates."
     columns:
       - name: uniqueid
         description: "Stable business-location id from the registry."
         tests: [not_null]
 
   - name: stg_sf_inspections
-    description: "SF restaurant health inspections (LIVES). Multiple rows per business."
+    description: "SF restaurant health inspections (tvy3-wexg). Multiple rows per business; `business_name` matches the registry's `dba_name`."
     columns:
-      - name: business_id
+      - name: business_name
         tests: [not_null]

@@ -19,6 +19,10 @@ models:
       +materialized: table
 
 vars:
-  # Row cap pulled from each Socrata source. Raise for full loads (and consider a
-  # Socrata app token to lift rate limits).
-  max_rows: 5000
+  # Row cap pulled from each Socrata source (after server-side prefiltering).
+  # Overrides Socrata's 1000-row default; keep it above the prefiltered row count
+  # (~13k recently-opened businesses) so nothing is silently truncated.
+  max_rows: 50000
+  # "Recently opened" window: businesses whose location started within this many
+  # months, and the inspection window used to confirm them. Both sources share it.
+  open_lookback_months: 12
