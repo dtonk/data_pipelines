@@ -23,6 +23,11 @@ vars:
   # Overrides Socrata's 1000-row default; keep it above the prefiltered row count
   # (~13k recently-opened businesses) so nothing is silently truncated.
   max_rows: 50000
-  # "Recently opened" window: businesses whose location started within this many
-  # months, and the inspection window used to confirm them. Both sources share it.
-  open_lookback_months: 12
+  # Pull new business locations opened within this many months...
+  business_open_lookback_months: 12
+  # ...and inspections over the same window, so each business's true first
+  # inspection is captured (an inspection can't predate the opening).
+  inspection_lookback_months: 12
+  # Headline filter (applied in the mart): keep only businesses whose FIRST
+  # inspection landed within this many days — i.e. just confirmed open.
+  first_inspection_window_days: 30

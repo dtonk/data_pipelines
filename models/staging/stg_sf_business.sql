@@ -1,8 +1,9 @@
 -- Source: DataSF "Registered Business Locations" (g8m3-pdis), Socrata JSON.
 -- The "recently opened" side: businesses whose location opened within the lookback
--- window and is still active (no end date). Prefiltered server-side to those rows
--- and only the columns we use. Future-dated junk start dates are excluded.
-{%- set lookback = var('open_lookback_months', 12) -%}
+-- window (var:business_open_lookback_months) and is still active (no end date).
+-- Prefiltered server-side to those rows and only the columns we use. Future-dated
+-- junk start dates are excluded.
+{%- set lookback = var('business_open_lookback_months', 12) -%}
 {%- set today = modules.datetime.date.today() -%}
 {%- set cutoff = (today - modules.datetime.timedelta(days=lookback * 31)).isoformat() %}
 with raw as (

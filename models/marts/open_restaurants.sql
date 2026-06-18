@@ -1,10 +1,11 @@
 {{ config(materialized='table', tags=['ltm_feed']) }}
 
--- Recently-opened SF food businesses, confirmed actually open. Two signals:
---   1. the business registry lists the location as recently opened & still active
---      ({{ ref('stg_sf_business') }}), and
---   2. it has had a health inspection ({{ ref('stg_sf_inspections') }}) — its first
---      inspection is proof it really opened, not just registered.
+-- SF food businesses *just confirmed open*: opened within the last year AND their
+-- FIRST health inspection landed in the recent window (var:first_inspection_window_days).
+-- A location is often registered well before it's inspected, so the first inspection
+-- is the real "now operating" signal — this feed surfaces those as they happen.
+--   biz  = recently-opened, still-active registry locations ({{ ref('stg_sf_business') }})
+--   first_inspection = earliest inspection per location ({{ ref('stg_sf_inspections') }})
 -- Inspections are sourced from the registry, so `dba` == `dba_name`; we join on
 -- normalized name, with normalized address as a tiebreaker for chains (same name,
 -- many locations). The inspection cross-check also restricts to food businesses.
@@ -39,3 +40,5 @@ from biz b
 join first_inspection f
   on lower(trim(b.dba_name)) = f.name_key
  and {{ normalize_address('b.full_business_address') }} = f.addr_key
+-- Just confirmed open: first inspection within the recent window.
+where f.first_inspected >= current_date - interval '{{ var('first_inspection_window_days', 30) }}' day

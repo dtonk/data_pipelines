@@ -4,7 +4,7 @@
 -- business really opened. Prefiltered server-side to the lookback window (a
 -- recently-opened business's first inspection falls inside it) and the columns we
 -- use. Future-dated junk inspection dates are excluded.
-{%- set lookback = var('open_lookback_months', 12) -%}
+{%- set lookback = var('inspection_lookback_months', 12) -%}
 {%- set today = modules.datetime.date.today() -%}
 {%- set cutoff = (today - modules.datetime.timedelta(days=lookback * 31)).isoformat() %}
 with raw as (
