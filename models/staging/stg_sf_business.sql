@@ -10,10 +10,11 @@ with raw as (
     select *
     from {{ socrata_json(
         'g8m3-pdis',
-        select='uniqueid, dba_name, full_business_address, city, business_zip, location_start_date, location_end_date, location',
+        select='uniqueid, dba_name, full_business_address, city, business_zip, dba_start_date, location_end_date, location, naic_code_description, lic_code_description',
         where="location_end_date IS NULL"
-              ~ " AND location_start_date >= '" ~ cutoff ~ "'"
-              ~ " AND location_start_date <= '" ~ today.isoformat() ~ "'"
+              ~ " AND dba_start_date >= '" ~ cutoff ~ "'"
+              ~ " AND dba_start_date <= '" ~ today.isoformat() ~ "'"
+              ~ " AND (lic_code_description like '%RESTAURANT%' OR naic_code_description = 'Food Services')"
     ) }}
 )
 
@@ -23,7 +24,7 @@ select
     full_business_address,
     city,
     business_zip,
-    try_cast(location_start_date as date)        as opened_date,
+    try_cast(dba_start_date as date)        as opened_date,
     -- Socrata point: {"type":"Point","coordinates":[lng,lat]} → DuckDB STRUCT.
     try_cast(location.coordinates[1] as double)  as lng,
     try_cast(location.coordinates[2] as double)  as lat

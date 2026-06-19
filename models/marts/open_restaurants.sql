@@ -35,7 +35,8 @@ select
     b.lat,
     b.lng,
     b.opened_date,
-    f.first_inspected
+    f.first_inspected,
+    CURRENT_TIMESTAMP as data_as_of
 from biz b
 join first_inspection f
   on lower(trim(b.dba_name)) = f.name_key

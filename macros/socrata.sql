@@ -8,9 +8,11 @@
     {%- set params = [] -%}
     {%- if select -%}{%- do params.append('$select=' ~ (select | replace(' ', ''))) -%}{%- endif -%}
     {%- if where -%}
-        {#- URL-encode the SoQL: %27 for quotes (else they'd close the SQL string
-            literal wrapping this URL), %20/%3E/%3C for space and comparisons. -#}
-        {%- set enc = where | replace("'", '%27') | replace(' ', '%20') | replace('>', '%3E') | replace('<', '%3C') -%}
+        {#- URL-encode the SoQL: %25 for percent FIRST (LIKE wildcards; must precede
+            the others so it doesn't double-encode them), %27 for quotes (else they'd
+            close the SQL string literal wrapping this URL), %20/%3E/%3C for space
+            and comparisons. -#}
+        {%- set enc = where | replace('%', '%25') | replace("'", '%27') | replace(' ', '%20') | replace('>', '%3E') | replace('<', '%3C') -%}
         {%- do params.append('$where=' ~ enc) -%}
     {%- endif -%}
     {%- do params.append('$limit=' ~ var('max_rows')) -%}
