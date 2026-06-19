@@ -32,6 +32,7 @@ select
     b.uniqueid              as id,
     b.dba_name              as name,
     b.full_business_address as address,
+    b.neighborhood,
     b.lat,
     b.lng,
     b.opened_date,
