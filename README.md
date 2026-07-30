@@ -30,6 +30,26 @@ businesses. Both Socrata pulls are prefiltered server-side via the
 Tune the window with `var:open_lookback_months`; refine
 [`normalize_address`](macros/normalize_address.sql) if you hit mismatches.
 
+## `city_jobs`
+
+SF city job postings (Permanent/Temporary Exempt) from the SmartRecruiters API
+behind [careers.sf.gov](https://careers.sf.gov), filtered to the job classes in
+`var:city_job_classes` (`dbt_project.yml`) — mirrors the filter used by the
+separate [`city_job_alerts`](https://github.com/dtonk/projects/tree/main/city_job_alerts)
+repo, which independently emails alerts on new postings; this pipeline only
+publishes the current snapshot, it doesn't send email.
+
+SmartRecruiters caps postings at 100/page, so unlike the Socrata sources this
+can't be a single `read_json_auto()` call — `scripts/fetch_city_jobs.py` paginates
+and flattens to `sources/city_jobs.json` (gitignored) before `dbt run`:
+
+```bash
+python scripts/fetch_city_jobs.py
+dbt run --profiles-dir .
+```
+
+Tagged `reliquery`, not `ltm_feed` — it publishes to Reliquery only, no map feed.
+
 ## The Low Tech Maps feed contract
 
 Every `ltm_feed` model should emit flat columns Low Tech Maps can map:
@@ -83,9 +103,31 @@ One-time setup in the Cloudflare dashboard:
 
 Without `.env`, the exporter just writes local files under `out/`.
 
+## Publishing (Reliquery)
+
+Models tagged `reliquery` also publish to [reliquery.net](https://reliquery.net),
+a queryable open-data portal, via `scripts/publish_reliquery.py`:
+
+```bash
+dbt run --profiles-dir .
+python scripts/publish_reliquery.py   # needs DSP_TOKEN in .env
+```
+
+The first run creates the dataset and records its id in
+`reliquery_datasets.json` (committed to the repo); later runs `PUT` to that
+id to refresh contents in place. To publish another model, tag it
+`reliquery` — discovery is tag-driven, same as `ltm_feed`. Pass model names to
+publish only a subset, e.g. `python scripts/publish_reliquery.py city_jobs`
+(used by the narrower `city_jobs` workflow, see Scheduling).
+
 ## Scheduling
 
 [`.github/workflows/build.yml`](.github/workflows/build.yml) runs `dbt run` +
 export weekly (Mondays 11:30 UTC) and on manual dispatch. Add the `R2_*` repo
 secrets to enable publishing. Low Tech Maps then refreshes from the URL on its own
 cadence.
+
+[`.github/workflows/build-city-jobs.yml`](.github/workflows/build-city-jobs.yml)
+runs `city_jobs` on its own, more frequent schedule (8 AM / 2 PM Pacific, matching
+`city_job_alerts`) since job postings are time-sensitive. Add the `DSP_TOKEN` repo
+secret to enable publishing.

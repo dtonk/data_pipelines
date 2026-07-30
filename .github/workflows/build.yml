@@ -6,7 +6,7 @@ on:
   workflow_dispatch: {}
 
 permissions:
-  contents: read   # least privilege; the job only reads code and writes to R2
+  contents: read   # least privilege; the job only reads code and writes to R2/Reliquery
 
 jobs:
   build:
@@ -19,8 +19,11 @@ jobs:
         with:
           python-version: '3.12'
       - run: pip install -r requirements.txt
-      - run: dbt run --profiles-dir .
-      - run: dbt test --profiles-dir .
+      # city_jobs needs sources/city_jobs.json from fetch_city_jobs.py, which
+      # only the more frequent build-city-jobs.yml workflow runs — excluded
+      # here so this weekly build doesn't fail on a missing source file.
+      - run: dbt run --profiles-dir . --exclude stg_city_jobs+
+      - run: dbt test --profiles-dir . --exclude stg_city_jobs+
         continue-on-error: true   # surface data-quality failures without blocking publish
       - run: python scripts/export_feeds.py
         env:
@@ -29,3 +32,6 @@ jobs:
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
           R2_PUBLIC_BASE_URL: ${{ secrets.R2_PUBLIC_BASE_URL }}
+      - run: python scripts/publish_reliquery.py school_waitlists
+        env:
+          DSP_TOKEN: ${{ secrets.DSP_TOKEN }}

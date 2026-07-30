@@ -31,3 +31,34 @@ vars:
   # Headline filter (applied in the mart): keep only businesses whose FIRST
   # inspection landed within this many days — i.e. just confirmed open.
   first_inspection_window_days: 30
+
+  # SF city job postings (SmartRecruiters via careers.sf.gov) — mirrors the
+  # filter in the separate city_job_alerts repo's config.json. Empty
+  # city_job_classes matches all classes of the given employment types.
+  city_job_employment_types: ["Permanent Exempt", "Temporary Exempt"]
+  city_job_classes:
+    - "1042"
+    - "1043"
+    - "1044"
+    - "1052"
+    - "1053"
+    - "1054"
+    - "1063"
+    - "1064"
+    - "1070"
+    - "1071"
+    - "1073"
+    - "1080"
+    - "9976"
+    - "9978"
+    - "0931"
+    - "0932"
+    - "0933"
+    - "0941"
+    - "0942"
+    - "0943"
+    - "0951"
+    - "0952"
+    - "0953"
+    - "0954"
+    - "0955"

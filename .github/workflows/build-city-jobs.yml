@@ -1,0 +1,28 @@
+name: build-city-jobs
+
+on:
+  schedule:
+    # Matches city_job_alerts' cadence — job postings are time-sensitive.
+    - cron: '0 15 * * *'   # 8:00 AM PT
+    - cron: '0 21 * * *'   # 2:00 PM PT
+  workflow_dispatch: {}
+
+permissions:
+  contents: read   # least privilege; the job only reads code and writes to Reliquery
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      DUCKDB_PATH: warehouse.duckdb
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683   # v4.2.2
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b   # v5.3.0
+        with:
+          python-version: '3.12'
+      - run: pip install -r requirements.txt
+      - run: python scripts/fetch_city_jobs.py
+      - run: dbt run --profiles-dir . --select stg_city_jobs city_jobs
+      - run: python scripts/publish_reliquery.py city_jobs
+        env:
+          DSP_TOKEN: ${{ secrets.DSP_TOKEN }}

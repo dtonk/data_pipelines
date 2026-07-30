@@ -1,4 +1,4 @@
-{{ config(materialized='table', tags=['ltm_feed']) }}
+{{ config(materialized='table', tags=['ltm_feed', 'reliquery']) }}
 
 select
     w.school_name  as school,
