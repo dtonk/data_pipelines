@@ -3,6 +3,11 @@
 -- window (var:business_open_lookback_months) and is still active (no end date).
 -- Prefiltered server-side to those rows and only the columns we use. Future-dated
 -- junk start dates are excluded.
+-- Food businesses are identified by a RESTAURANT license or a NAICS code under 722
+-- (Food Services and Drinking Places). DataSF dropped the derived
+-- `naic_code_description` column in Aug 2026, leaving only the raw self-reported
+-- code — hence the prefix match, which also absorbs the varying code lengths
+-- ('722', '7220', '722511') that self-reporting produces.
 {%- set lookback = var('business_open_lookback_months', 12) -%}
 {%- set today = modules.datetime.date.today() -%}
 {%- set cutoff = (today - modules.datetime.timedelta(days=lookback * 31)).isoformat() %}
@@ -10,11 +15,11 @@ with raw as (
     select *
     from {{ socrata_json(
         'g8m3-pdis',
-        select='uniqueid, dba_name, full_business_address, city, business_zip, dba_start_date, location_end_date, location, naic_code_description, lic_code_description, neighborhoods_analysis_boundaries',
+        select='uniqueid, dba_name, full_business_address, city, business_zip, dba_start_date, location_end_date, location, self_reported_naics_code, lic_code_description, neighborhoods_analysis_boundaries',
         where="location_end_date IS NULL"
               ~ " AND dba_start_date >= '" ~ cutoff ~ "'"
               ~ " AND dba_start_date <= '" ~ today.isoformat() ~ "'"
-              ~ " AND (lic_code_description like '%RESTAURANT%' OR naic_code_description = 'Food Services')"
+              ~ " AND (lic_code_description like '%RESTAURANT%' OR starts_with(self_reported_naics_code, '722'))"
     ) }}
 )
 
