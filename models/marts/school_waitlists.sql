@@ -18,7 +18,7 @@ select
     w.current_waitlist - coalesce(p.prior_waitlist, w.current_waitlist) as waitlist_change,
     w.offers_made - coalesce(p.prior_offers_made, w.offers_made) as offers_change,
     p.prior_data_as_of,
-    current_timestamp as data_as_of
+    {{ utc_now() }} as data_as_of
 from {{ ref('stg_sfusd_waitlist') }} w
 inner join {{ ref('stg_sf_schools') }} s
     on w.name_key = s.name_key

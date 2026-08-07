@@ -9,3 +9,7 @@ data_pipelines:
       threads: 4
       extensions:
         - httpfs   # lets read_json_auto/read_csv_auto fetch remote URLs
+      settings:
+        # Pin the session timezone so timestamps don't shift between a laptop and
+        # the UTC CI runner — see the utc_now() macro.
+        TimeZone: UTC

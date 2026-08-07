@@ -10,7 +10,7 @@ select
     department,
     ref_num,
     released_date,
-    current_timestamp as data_as_of
+    {{ utc_now() }} as data_as_of
 from {{ ref('stg_city_jobs') }}
 where employment_type in ('{{ var('city_job_employment_types') | join("', '") }}')
 {% if var('city_job_classes') %}
