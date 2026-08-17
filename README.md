@@ -50,6 +50,26 @@ dbt run --profiles-dir .
 
 Tagged `reliquery`, not `ltm_feed` — it publishes to Reliquery only, no map feed.
 
+## `netfile_sei_holdings`
+
+SF employees'/officials' Form 700 (Statement of Economic Interests) disclosures —
+stock holdings, real property, income sources, gifts, travel payments — from the
+[SF Ethics Commission's public NetFile portal](https://netfile.com/public/SFO/sei).
+One row per disclosed item; schedule-specific detail that isn't worth normalizing
+across schedules stays in the `content` JSON column.
+
+NetFile has no public API docs — `scripts/fetch_netfile_sei.py` calls an endpoint
+reverse-engineered from the portal's JS bundle (`api/searchtransactions`), paginates
+the ~130k rows, and flattens to `sources/netfile_sei_transactions.json` before
+`dbt run`:
+
+```bash
+python scripts/fetch_netfile_sei.py
+dbt run --profiles-dir .
+```
+
+Tagged `reliquery`, not `ltm_feed` — no coordinates to map.
+
 ## The Low Tech Maps feed contract
 
 Every `ltm_feed` model should emit flat columns Low Tech Maps can map:
