@@ -3,8 +3,10 @@
 -- SF employee/official financial-interest disclosures (Form 700), one row per
 -- schedule item. Schedule shape varies a lot (a stock holding and a gift
 -- share almost no fields), so this pulls out the handful of fields worth
--- normalizing across schedules and keeps the rest in `content` for anyone
--- who needs schedule-specific detail (e.g. `content->>'$.Loan'` on Schedule C).
+-- normalizing across schedules. The raw `content` JSON (schedule-specific
+-- detail, e.g. `content->>'$.Loan'` on Schedule C) is dropped here rather
+-- than published — it roughly triples row size and pushes the CSV past
+-- Reliquery's upload limit; query stg_netfile_sei_transactions directly for it.
 --
 -- FPPC fair-market-value/income brackets (Schedule A-1/A-2's FairMarketValue,
 -- GrossIncomeReceived, etc.) come back from NetFile as small integer codes
@@ -74,6 +76,5 @@ select
     period_start,
     period_end,
     year,
-    content,
     {{ utc_now() }} as data_as_of
 from {{ ref('stg_netfile_sei_transactions') }}
