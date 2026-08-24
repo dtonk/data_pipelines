@@ -151,3 +151,9 @@ cadence.
 runs `city_jobs` on its own, more frequent schedule (8 AM / 2 PM Pacific, matching
 `city_job_alerts`) since job postings are time-sensitive. Add the `DSP_TOKEN` repo
 secret to enable publishing.
+
+[`.github/workflows/build-netfile-sei.yml`](.github/workflows/build-netfile-sei.yml)
+runs `netfile_sei_holdings` on manual dispatch only — SEI filings don't change
+often enough to warrant a schedule. Both this and `build-city-jobs.yml` fetch
+their own source file, so they're excluded from the weekly `build.yml` run,
+which would otherwise fail on a missing `sources/*.json`.
