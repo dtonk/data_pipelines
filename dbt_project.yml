@@ -9,8 +9,8 @@ macro-paths: ["macros"]
 target-path: "target"
 clean-targets: ["target", "dbt_packages"]
 
-# Staging = thin views over the raw sources; marts = materialized tables that the
-# exporter publishes. Any mart tagged `ltm_feed` is exported for Low Tech Maps.
+# Staging = thin views over the raw sources; marts = materialized tables that
+# publish_reliquery.py publishes. Any mart tagged `reliquery` is published.
 models:
   data_pipelines:
     staging:
@@ -19,19 +19,6 @@ models:
       +materialized: table
 
 vars:
-  # Row cap pulled from each Socrata source (after server-side prefiltering).
-  # Overrides Socrata's 1000-row default; keep it above the prefiltered row count
-  # (~13k recently-opened businesses) so nothing is silently truncated.
-  max_rows: 50000
-  # Pull new business locations opened within this many months...
-  business_open_lookback_months: 12
-  # ...and inspections over the same window, so each business's true first
-  # inspection is captured (an inspection can't predate the opening).
-  inspection_lookback_months: 12
-  # Headline filter (applied in the mart): keep only businesses whose FIRST
-  # inspection landed within this many days — i.e. just confirmed open.
-  first_inspection_window_days: 30
-
   # SF city job postings (SmartRecruiters via careers.sf.gov) — mirrors the
   # filter in the separate city_job_alerts repo's config.json. Empty
   # city_job_classes matches all classes of the given employment types.
